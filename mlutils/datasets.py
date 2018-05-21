@@ -61,6 +61,8 @@ def fetch_imagenet(dst, wnids=[], limit=0, verbose=True):
                 image = bytearray(requests.get(url.strip()).content)
                 image = numpy.asarray(image, dtype='uint8')
                 image = cv2.imdecode(image, -1)
+                if image is None:
+                    raise Exception
                 fname = str(count).zfill(len(str(len(urls)))) + '.jpg'
                 cv2.imwrite(os.path.join(path, fname), image)
             except:
