@@ -18,6 +18,7 @@ import numpy
 import os
 
 from keras import applications
+from keras import optimizers
 from keras.callbacks import CSVLogger
 from keras.callbacks import EarlyStopping
 from keras.callbacks import ModelCheckpoint
@@ -37,16 +38,17 @@ ARCHITECTURE = 'vgg19'
 INCLUDE_TOPL = True
 WEIGHTS_INIT = 'imagenet'
 INPUT_TENSOR = None
-INPUT_DSHAPE = None
+INPUT_DSHAPE = (256, 256, 3)
 POOLING_TYPE = None
 NUM_TCLASSES = 1000
 FREEZE_LAYER = 0
 NEURONS_FC_1 = 1024
 NEURONS_FC_2 = 1024
 DROPOUT_FC12 = 0.5
+FN_OPTIMIZER = optimizers.sgd(lr=0.01, momentum=0.0)
 
-DATA_TRAIN = 'data_train/data.h5'
-DATA_VALID = 'data_valid/data.h5'
+DATA_TRAIN = 'data/data_train/data.mat'
+DATA_VALID = 'data/data_valid/data.mat'
 IMAGE_SIZE = (100, 100, 3)
 BATCH_SIZE = 100
 NUM_EPOCHS = 100
@@ -55,11 +57,11 @@ OUTPUT_DIR = 'output_{}/'.format(ARCHITECTURE)
 
 
 # setup paths for callbacks
-log_dir = os.path.join(OUTPUT_DIR, 'log')
+log_dir = os.path.join(OUTPUT_DIR, 'logs')
 cpt_dir = os.path.join(OUTPUT_DIR, 'checkpoints')
 tbd_dir = os.path.join(OUTPUT_DIR, 'tensorboard')
 
-log_file = os.path.join(log_dir, 'log.csv')
+log_file = os.path.join(log_dir, 'training.csv')
 cpt_best = os.path.join(cpt_dir, '{}_best.h5'.format(ARCHITECTURE))
 cpt_last = os.path.join(cpt_dir, '{}_last.h5'.format(ARCHITECTURE))
 
@@ -80,10 +82,13 @@ def validate_paths():
 
 # load data
 def load_data():
-    data_train = numpy.random.shuffle(loadmat(DATA_TRAIN)['data'])
-    data_valid = numpy.random.shuffle(loadmat(DATA_VALID)['data'])
+    data_train = loadmat(DATA_TRAIN)['data']
+    data_valid = loadmat(DATA_VALID)['data']
     
-    if IMAGE_SIZE == INPUT_DSHAPE:
+    numpy.random.shuffle(data_train)
+    numpy.random.shuffle(data_valid)
+    
+    if INPUT_DSHAPE is None or IMAGE_SIZE == INPUT_DSHAPE:
         x_train = data_train[:, 1:].astype('float32') / 255.0
         x_valid = data_valid[:, 1:].astype('float32') / 255.0
     else:
@@ -114,15 +119,15 @@ def build_model():
     model = None
     
     # create architecture
-    if ARCHITECTURE == 'inceptionv3':
+    if ARCHITECTURE.lower() == 'inceptionv3':
         model = applications.inception_v3.InceptionV3(include_top=INCLUDE_TOPL, weights=WEIGHTS_INIT, input_tensor=INPUT_TENSOR, input_shape=INPUT_DSHAPE, pooling=POOLING_TYPE, classes=NUM_TCLASSES)
-    elif ARCHITECTURE == 'mobilenet':
+    elif ARCHITECTURE.lower() == 'mobilenet':
         model = applications.mobilenet.MobileNet(include_top=INCLUDE_TOPL, weights=WEIGHTS_INIT, input_tensor=INPUT_TENSOR, input_shape=INPUT_DSHAPE, pooling=POOLING_TYPE, classes=NUM_TCLASSES)
-    elif ARCHITECTURE == 'resnet50':
+    elif ARCHITECTURE.lower() == 'resnet50':
         model = applications.resnet50.ResNet50(include_top=INCLUDE_TOPL, weights=WEIGHTS_INIT, input_tensor=INPUT_TENSOR, input_shape=INPUT_DSHAPE, pooling=POOLING_TYPE, classes=NUM_TCLASSES)
-    elif ARCHITECTURE == 'vgg16':
+    elif ARCHITECTURE.lower() == 'vgg16':
         model = applications.vgg16.VGG16(include_top=INCLUDE_TOPL, weights=WEIGHTS_INIT, input_tensor=INPUT_TENSOR, input_shape=INPUT_DSHAPE, pooling=POOLING_TYPE, classes=NUM_TCLASSES)
-    elif ARCHITECTURE == 'vgg19':
+    elif ARCHITECTURE.lower() == 'vgg19':
         model = applications.vgg19.VGG19(include_top=INCLUDE_TOPL, weights=WEIGHTS_INIT, input_tensor=INPUT_TENSOR, input_shape=INPUT_DSHAPE, pooling=POOLING_TYPE, classes=NUM_TCLASSES)
     
     if not model is None:
@@ -149,7 +154,7 @@ def build_model():
             model_final = model
         
         # compile the final model
-        model_final.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+        model_final.compile(optimizer=FN_OPTIMIZER, loss='categorical_crossentropy', metrics=['accuracy'])
     
     return model_final
 
@@ -177,7 +182,7 @@ def train():
     print('done')
     
     # create callbacks
-    cbs = callbacks()
+    cb_list = callbacks()
     
     # build model
     print('[INFO] Building model... ', end='')
@@ -193,13 +198,21 @@ def train():
     train_history = model.fit(x_train, y_train,
                               batch_size=BATCH_SIZE,
                               epochs=NUM_EPOCHS,
-                              callbacks=cbs,
+                              callbacks=cb_list,
                               validation_data=(x_valid, y_valid))
     
+    # plot learning curve
+    plot(train_history)
+    
+    return
+
+
+# plot learning curve
+def plot(train_history):
     # plot training and validation loss
     pyplot.figure()
-    pyplot.plot(train_history['loss'], label='loss')
-    pyplot.plot(train_history['val_loss'], label='val_loss')
+    pyplot.plot(train_history.history['loss'], label='loss')
+    pyplot.plot(train_history.history['val_loss'], label='val_loss')
     pyplot.title('Training and Validation Loss')
     pyplot.xlabel('epoch')
     pyplot.ylabel('loss')
@@ -209,8 +222,8 @@ def train():
     
     # plot training and validation accuracy
     pyplot.figure()
-    pyplot.plot(train_history['acc'], label='acc')
-    pyplot.plot(train_history['val_acc'], label='val_acc')
+    pyplot.plot(train_history.history['acc'], label='acc')
+    pyplot.plot(train_history.history['val_acc'], label='val_acc')
     pyplot.title('Training and Validation Accuracy')
     pyplot.xlabel('epoch')
     pyplot.ylabel('accuracy')
@@ -219,3 +232,8 @@ def train():
     pyplot.show()
     
     return
+
+
+# main
+if __name__ == '__main__':
+    train()
