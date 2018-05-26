@@ -12,49 +12,44 @@ GitHub: https://github.com/prasunroy/mlutils
 from __future__ import division
 from __future__ import print_function
 
+import cv2
 import glob
 import json
 import numpy
 import os
 import pandas
+import random
 
 from keras.applications import mobilenet
 from keras.models import load_model
 from matplotlib import pyplot
 
-from cvutils.io import imread
-from cvutils.geometric import scale
-from cvutils.noise import imnoise
-
 
 # configurations
 # -----------------------------------------------------------------------------
-MODEL_NAME = 'vgg19'
-MODEL_CKPT = 'output_{}/checkpoints/{}_best.h5'.format(MODEL_NAME, MODEL_NAME)
-IMAGE_DSRC = 'data/imgs_valid/'
-IMAGE_RFLG = 1
+MODEL_LIST = ['inceptionv3', 'mobilenet', 'resnet50', 'vgg16', 'vgg19']
+MODEL_DICT = {name.lower(): 'output/{}/checkpoints/{}_best.h5'\
+              .format(name, name) for name in MODEL_LIST}
 LABEL_MAPS = 'data/data_valid/labelmap.json'
-OUTPUT_DIR = 'output_{}/test/'.format(MODEL_NAME)
+IMAGE_DSRC = 'data/imgs_valid/'
+IMAGE_READ = 1
+OUTPUT_DIR = 'output/__test__/'
+NOISE_LIST = ['Gaussian_White', 'Gaussian_Color', 'Salt_and_Pepper',
+              'Gaussian_Blur', 'Motion_Blur', 'JPEG_Compression']
 # -----------------------------------------------------------------------------
-
-NOISE_LIST = ['Gaussian_White',
-              'Gaussian_Color',
-              'Salt_and_Pepper',
-              'Gaussian_Blur',
-              'Motion_Blur',
-              'JPEG_Compression']
 
 
 # validate paths
 def validate_paths():
-    if not os.path.isfile(MODEL_CKPT):
-        print('[INFO] Model checkpoint not found')
-        return False
-    if not os.path.isdir(IMAGE_DSRC):
-        print('[INFO] Validation data not found')
-        return False
+    for name, path in MODEL_DICT.items():
+        if not os.path.isfile(path):
+            print('[INFO] Model checkpoint not found at {}'.format(path))
+            return False
     if not os.path.isfile(LABEL_MAPS):
         print('[INFO] Label mapping not found')
+        return False
+    if not os.path.isdir(IMAGE_DSRC):
+        print('[INFO] Image data source not found')
         return False
     if not os.path.isdir(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
@@ -80,7 +75,7 @@ def load_data():
     # read images
     for label in labels:
         for file in glob.glob(os.path.join(IMAGE_DSRC, label, '*.*')):
-            image = imread(file, IMAGE_RFLG)
+            image = cv2.imread(file, IMAGE_READ)
             if image is None:
                 continue
             x.append(image)
@@ -89,14 +84,80 @@ def load_data():
     return (x, y)
 
 
-# load model checkpoint
-def load_ckpt():
-    if MODEL_NAME.lower() == 'mobilenet':
-        model = load_model(MODEL_CKPT, custom_objects={'relu6': mobilenet.relu6})
-    else:
-        model = load_model(MODEL_CKPT)
+# load models
+def load_models():
+    models = {}
+    for name, path in MODEL_DICT.items():
+        if name.lower() == 'mobilenet':
+            models[name] = load_model(path, custom_objects={'relu6': mobilenet.relu6})
+        else:
+            models[name] = load_model(path)
     
-    return model
+    return models
+
+
+# apply noise
+def imnoise(image, model, mu=0, sigma=0, density=0, gb_ksize=(1, 1),
+            mb_kernel=numpy.zeros((1, 1), dtype='uint8'), quality=100):
+    image = image.copy()
+    if len(image.shape) == 2:
+        image = numpy.expand_dims(image, 2)
+    
+    # get dimension of the image
+    h, w, c = image.shape
+    
+    # apply a noise model
+    model = model.lower()
+    
+    if model == 'gaussian_white':
+        noise = numpy.random.normal(mu, sigma, (h, w))
+        noise = numpy.dstack([noise]*c)
+        image = image + noise
+        image = cv2.normalize(image, None, 0, 255,
+                              cv2.NORM_MINMAX, cv2.CV_8UC1)
+    
+    elif model == 'gaussian_color':
+        noise = numpy.random.normal(mu, sigma, (h, w, c))
+        image = image + noise
+        image = cv2.normalize(image, None, 0, 255,
+                              cv2.NORM_MINMAX, cv2.CV_8UC1)
+    
+    elif model == 'salt_and_pepper':
+        if density < 0:
+            density = 0
+        elif density > 1:
+            density = 1
+        x = random.sample(range(w), w)
+        y = random.sample(range(h), h)
+        x, y = numpy.meshgrid(x, y)
+        xy = numpy.c_[x.reshape(-1), y.reshape(-1)]
+        n = int(w * h * density)
+        n = random.sample(range(w*h), n)
+        for i in n:
+            if random.random() > 0.5:
+                image[xy[i][1], xy[i][0], :] = 255
+            else:
+                image[xy[i][1], xy[i][0], :] = 0
+    
+    elif model == 'gaussian_blur':
+        image = cv2.GaussianBlur(image, gb_ksize, 0)
+    
+    elif model == 'motion_blur':
+        image = cv2.filter2D(image, -1, mb_kernel)
+    
+    elif model == 'jpeg_compression':
+        if quality < 0:
+            quality = 0
+        elif quality > 100:
+            quality = 100
+        image = cv2.imencode('.jpg', image,
+                             [int(cv2.IMWRITE_JPEG_QUALITY), quality])[-1]
+        image = cv2.imdecode(image, -1)
+    
+    if image.shape[-1] == 1:
+        image = numpy.squeeze(image, 2)
+    
+    return image
 
 
 # test model
@@ -106,11 +167,10 @@ def test():
     (x, y) = load_data()
     print('done')
     
-    # load model checkpoint
-    print('[INFO] Loading model... ', end='')
-    model = load_ckpt()
+    # load models
+    print('[INFO] Loading models... ', end='')
+    models = load_models()
     print('done')
-    model.summary()
     
     print('-'*34 + ' BEGIN TEST ' + '-'*34)
     
@@ -120,7 +180,7 @@ def test():
             pass
         elif noise.lower() == 'gaussian_color':
             pass
-        elif noise.lower() == 'salt-and-pepper':
+        elif noise.lower() == 'salt_and_pepper':
             pass
         elif noise.lower() == 'gaussian_blur':
             pass

@@ -52,7 +52,7 @@ DATA_VALID = 'data/data_valid/data.mat'
 IMAGE_SIZE = (100, 100, 3)
 BATCH_SIZE = 100
 NUM_EPOCHS = 100
-OUTPUT_DIR = 'output_{}/'.format(ARCHITECTURE)
+OUTPUT_DIR = 'output/{}/'.format(ARCHITECTURE)
 # -----------------------------------------------------------------------------
 
 
