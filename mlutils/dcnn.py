@@ -34,11 +34,11 @@ from scipy.io import loadmat
 
 # configurations
 # -----------------------------------------------------------------------------
-ARCHITECTURE = 'vgg19'
+ARCHITECTURE = 'inceptionv3'
 INCLUDE_TOPL = True
 WEIGHTS_INIT = 'imagenet'
 INPUT_TENSOR = None
-INPUT_DSHAPE = (256, 256, 3)
+INPUT_DSHAPE = (299, 299, 3)
 POOLING_TYPE = None
 NUM_TCLASSES = 1000
 FREEZE_LAYER = 0

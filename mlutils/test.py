@@ -27,7 +27,8 @@ from matplotlib import pyplot
 
 # configurations
 # -----------------------------------------------------------------------------
-MODEL_LIST = ['inceptionv3', 'mobilenet', 'resnet50', 'vgg16', 'vgg19']
+MODEL_LIST = ['inceptionv3', 'mobilenet', 'resnet50', 'vgg16', 'vgg19',
+              'capsnet']
 MODEL_DICT = {name.lower(): 'output/{}/checkpoints/{}_best.h5'\
               .format(name, name) for name in MODEL_LIST}
 LABEL_MAPS = 'data/data_valid/labelmap.json'
@@ -37,6 +38,14 @@ OUTPUT_DIR = 'output/__test__/'
 NOISE_LIST = ['Gaussian_White', 'Gaussian_Color', 'Salt_and_Pepper',
               'Gaussian_Blur', 'Motion_Blur', 'JPEG_Compression']
 # -----------------------------------------------------------------------------
+
+# setup parameters
+sigmavals = [x for x in range(0, 256, 5)]
+densities = [x/100 for x in range(0, 101, 5)]
+gb_ksizes = [x for x in range(1, 52, 2)]
+mb_ksizes = [x for x in range(3, 32, 2)]
+qualities = [x for x in range(30, -1, -2)]
+histories = {'y_'+name.lower(): [] for name in MODEL_LIST}
 
 
 # validate paths
@@ -160,7 +169,7 @@ def imnoise(image, model, mu=0, sigma=0, density=0, gb_ksize=(1, 1),
     return image
 
 
-# test model
+# test models
 def test():
     # load data
     print('[INFO] Loading data... ', end='')
@@ -177,19 +186,258 @@ def test():
     # run tests
     for noise in NOISE_LIST:
         if noise.lower() == 'gaussian_white':
-            pass
+            test_gaussian_white(x, y, models)
         elif noise.lower() == 'gaussian_color':
-            pass
+            test_gaussian_color(x, y, models)
         elif noise.lower() == 'salt_and_pepper':
-            pass
+            test_salt_and_pepper(x, y, models)
         elif noise.lower() == 'gaussian_blur':
-            pass
+            test_gaussian_blur(x, y, models)
         elif noise.lower() == 'motion_blur':
-            pass
+            test_motion_blur(x, y, models)
         elif noise.lower() == 'jpeg_compression':
-            pass
+            test_jpeg_compression(x, y, models)
     
     print('-'*35 + ' END TEST ' + '-'*35)
+    
+    return
+
+
+# tests for gaussian white noise
+def test_gaussian_white(x, y, models):
+    # reset histories
+    for name in histories.keys():
+        histories[name] = []
+    histories['x'] = sigmavals
+    
+    # run tests
+    samples = len(x)
+    for sigma in sigmavals:
+        print('[INFO] Applying Gaussian white noise with mu=0 and sigma={}'\
+              .format(sigma))
+        noisy = []
+        count = 0
+        for image in x:
+            noisy.append(imnoise(image, 'gaussian_white', mu=0, sigma=sigma))
+            count += 1
+            print('\r[INFO] Progress... {:3.0f}%'\
+                  .format(count*100/samples), end='')
+        test_models(noisy, y, models)
+    
+    # save and plot histories
+    df = pandas.DataFrame(histories)
+    df.to_csv(os.path.join(OUTPUT_DIR, 'gaussian_white.csv'), index=False)
+    plot(filepath=os.path.join(OUTPUT_DIR, 'gaussian_white.png'),
+         title='Change in test accuracy with Gaussian white noise',
+         xlabel='standard deviation',
+         ylabel='accuracy')
+    
+    return
+
+
+# tests for gaussian color noise
+def test_gaussian_color(x, y, models):
+    # reset histories
+    for name in histories.keys():
+        histories[name] = []
+    histories['x'] = sigmavals
+    
+    # run tests
+    samples = len(x)
+    for sigma in sigmavals:
+        print('[INFO] Applying Gaussian color noise with mu=0 and sigma={}'\
+              .format(sigma))
+        noisy = []
+        count = 0
+        for image in x:
+            noisy.append(imnoise(image, 'gaussian_color', mu=0, sigma=sigma))
+            count += 1
+            print('\r[INFO] Progress... {:3.0f}%'\
+                  .format(count*100/samples), end='')
+        test_models(noisy, y, models)
+    
+    # save and plot histories
+    df = pandas.DataFrame(histories)
+    df.to_csv(os.path.join(OUTPUT_DIR, 'gaussian_color.csv'), index=False)
+    plot(filepath=os.path.join(OUTPUT_DIR, 'gaussian_color.png'),
+         title='Change in test accuracy with Gaussian color noise',
+         xlabel='standard deviation',
+         ylabel='accuracy')
+    
+    return
+
+
+# tests for salt and pepper noise
+def test_salt_and_pepper(x, y, models):
+    # reset histories
+    for name in histories.keys():
+        histories[name] = []
+    histories['x'] = densities
+    
+    # run tests
+    samples = len(x)
+    for density in densities:
+        print('[INFO] Applying salt and pepper noise with density={}'\
+              .format(density))
+        noisy = []
+        count = 0
+        for image in x:
+            noisy.append(imnoise(image, 'salt_and_pepper', density=density))
+            count += 1
+            print('\r[INFO] Progress... {:3.0f}%'\
+                  .format(count*100/samples), end='')
+        test_models(noisy, y, models)
+    
+    # save and plot histories
+    df = pandas.DataFrame(histories)
+    df.to_csv(os.path.join(OUTPUT_DIR, 'salt_and_pepper.csv'), index=False)
+    plot(filepath=os.path.join(OUTPUT_DIR, 'salt_and_pepper.png'),
+         title='Change in test accuracy with salt and pepper noise',
+         xlabel='noise density',
+         ylabel='accuracy')
+    
+    return
+
+
+# tests for gaussian blur
+def test_gaussian_blur(x, y, models):
+    # reset histories
+    for name in histories.keys():
+        histories[name] = []
+    histories['x'] = gb_ksizes
+    
+    # run tests
+    samples = len(x)
+    for ksize in gb_ksizes:
+        print('[INFO] Applying Gaussian blur with kernel size=({}, {})'\
+              .format(ksize, ksize))
+        noisy = []
+        count = 0
+        for image in x:
+            noisy.append(imnoise(image, 'gaussian_blur',
+                                 gb_ksize=(ksize, ksize)))
+            count += 1
+            print('\r[INFO] Progress... {:3.0f}%'\
+                  .format(count*100/samples), end='')
+        test_models(noisy, y, models)
+    
+    # save and plot histories
+    df = pandas.DataFrame(histories)
+    df.to_csv(os.path.join(OUTPUT_DIR, 'gaussian_blur.csv'), index=False)
+    plot(filepath=os.path.join(OUTPUT_DIR, 'gaussian_blur.png'),
+         title='Change in test accuracy with Gaussian blur',
+         xlabel='kernel size',
+         ylabel='accuracy')
+    
+    return
+
+
+# tests for motion blur
+def test_motion_blur(x, y, models):
+    # reset histories
+    for name in histories.keys():
+        histories[name] = []
+    histories['x'] = mb_ksizes
+    
+    # run tests
+    samples = len(x)
+    for ksize in mb_ksizes:
+        print('[INFO] Applying motion blur with kernel size=({}, {})'\
+              .format(ksize, ksize))
+        noisy = []
+        count = 0
+        mb_kernel = numpy.zeros((ksize, ksize))
+        mb_kernel[ksize//2, :] = 1
+        mb_kernel /= numpy.sum(mb_kernel)
+        for image in x:
+            noisy.append(imnoise(image, 'motion_blur', mb_kernel=mb_kernel))
+            count += 1
+            print('\r[INFO] Progress... {:3.0f}%'\
+                  .format(count*100/samples), end='')
+        test_models(noisy, y, models)
+    
+    # save and plot histories
+    df = pandas.DataFrame(histories)
+    df.to_csv(os.path.join(OUTPUT_DIR, 'motion_blur.csv'), index=False)
+    plot(filepath=os.path.join(OUTPUT_DIR, 'motion_blur.png'),
+         title='Change in test accuracy with motion blur',
+         xlabel='kernel size',
+         ylabel='accuracy')
+    
+    return
+
+
+# tests for JPEG compression
+def test_jpeg_compression(x, y, models):
+    # reset histories
+    for name in histories.keys():
+        histories[name] = []
+    histories['x'] = qualities
+    
+    # run tests
+    samples = len(x)
+    for quality in qualities:
+        print('[INFO] Applying JPEG compression with quality={}'\
+              .format(quality))
+        noisy = []
+        count = 0
+        for image in x:
+            noisy.append(imnoise(image, 'jpeg_compression', quality=quality))
+            count += 1
+            print('\r[INFO] Progress... {:3.0f}%'\
+                  .format(count*100/samples), end='')
+        test_models(noisy, y, models)
+    
+    # save and plot histories
+    df = pandas.DataFrame(histories)
+    df.to_csv(os.path.join(OUTPUT_DIR, 'jpeg_compression.csv'), index=False)
+    plot(filepath=os.path.join(OUTPUT_DIR, 'jpeg_compression.png'),
+         title='Change in test accuracy with JPEG compression',
+         xlabel='image quality',
+         ylabel='accuracy')
+    
+    return
+
+
+# test models
+def test_models(x, y, models):
+    samples = len(x)
+    for name in models.keys():
+        print('[INFO] Preparing images for {}'.format(name))
+        images = []
+        counts = 0
+        for image in x:
+            images.append(cv2.resize(image, models[name].input_shape[:2]))
+            counts += 1
+            print('\r[INFO] Progress... {:3.0f}%'\
+                  .format(counts*100/samples), end='')
+        print('[INFO] Testing images on {}... '.format(name), end='')
+        x = numpy.asarray(images, dtype='float32') / 255.0
+        y = numpy.asarray(y, dtype='int')
+        if name == 'capsnet':
+            p = models[name].predict(x)[0].argmax(axis=1)
+        else:
+            p = models[name].predict(x).argmax(axis=1)
+        accuracy = sum(p==y)*100/samples
+        histories['y_'+name].append(accuracy)
+        print('done [accuracy: {:6.2f}%]'.format(accuracy))
+    
+    return
+
+
+# plot histories
+def plot(filepath, title='', xlabel='', ylabel=''):
+    pyplot.figure()
+    pyplot.title(title)
+    pyplot.xlabel(xlabel)
+    pyplot.ylabel(ylabel)
+    for name in histories.keys():
+        if name == 'x':
+            continue
+        pyplot.plot(histories['x'], histories[name], label=name)
+    pyplot.legend()
+    pyplot.savefig(filepath)
+    pyplot.show()
     
     return
 
