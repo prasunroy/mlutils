@@ -171,6 +171,10 @@ def imnoise(image, model, mu=0, sigma=0, density=0, gb_ksize=(1, 1),
 
 # test models
 def test():
+    # validate paths
+    if not validate_paths():
+        return
+    
     # load data
     print('[INFO] Loading data... ', end='')
     (x, y) = load_data()
@@ -394,24 +398,25 @@ def test_jpeg_compression(x, y, models):
     plot(filepath=os.path.join(OUTPUT_DIR, 'jpeg_compression.png'),
          title='Change in test accuracy with JPEG compression',
          xlabel='image quality',
-         ylabel='accuracy')
+         ylabel='accuracy', invert_xaxis=True)
     
     return
 
 
 # test models
 def test_models(x, y, models):
+    print('')
     samples = len(x)
     for name in models.keys():
         print('[INFO] Preparing images for {}'.format(name))
         images = []
         counts = 0
         for image in x:
-            images.append(cv2.resize(image, models[name].input_shape[:2]))
+            images.append(cv2.resize(image, models[name].input_shape[1:3]))
             counts += 1
             print('\r[INFO] Progress... {:3.0f}%'\
                   .format(counts*100/samples), end='')
-        print('[INFO] Testing images on {}... '.format(name), end='')
+        print('\n[INFO] Testing images on {}... '.format(name), end='')
         x = numpy.asarray(images, dtype='float32') / 255.0
         y = numpy.asarray(y, dtype='int')
         if name == 'capsnet':
@@ -426,11 +431,16 @@ def test_models(x, y, models):
 
 
 # plot histories
-def plot(filepath, title='', xlabel='', ylabel=''):
+def plot(filepath, title='', xlabel='', ylabel='',
+         invert_xaxis=False, invert_yaxis=False):
     pyplot.figure()
     pyplot.title(title)
     pyplot.xlabel(xlabel)
     pyplot.ylabel(ylabel)
+    if invert_xaxis:
+        pyplot.gca().invert_xaxis()
+    if invert_yaxis:
+        pyplot.gca().invert_yaxis()
     for name in histories.keys():
         if name == 'x':
             continue
