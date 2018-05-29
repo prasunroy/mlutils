@@ -89,8 +89,8 @@ def load_data():
     numpy.random.shuffle(data_valid)
     
     if INPUT_DSHAPE is None or IMAGE_SIZE == INPUT_DSHAPE:
-        x_train = data_train[:, 1:].astype('float32') / 255.0
-        x_valid = data_valid[:, 1:].astype('float32') / 255.0
+        x_train = data_train[:, 1:].reshape((-1,)+INPUT_DSHAPE).astype('float32') / 255.0
+        x_valid = data_valid[:, 1:].reshape((-1,)+INPUT_DSHAPE).astype('float32') / 255.0
     else:
         x_train = []
         x_valid = []
