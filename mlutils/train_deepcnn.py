@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Deep convolutional neural networks.
+Training deep convolutional neural networks.
 Created on Tue May 22 20:00:00 2018
 Author: Prasun Roy | CVPRU-ISICAL (http://www.isical.ac.in/~cvpr)
 GitHub: https://github.com/prasunroy/mlutils
