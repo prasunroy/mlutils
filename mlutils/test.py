@@ -24,11 +24,13 @@ from keras.applications import mobilenet
 from keras.models import load_model
 from matplotlib import pyplot
 
+from train_capsnet import build_model
+
 
 # configurations
 # -----------------------------------------------------------------------------
-MODEL_LIST = ['inceptionv3', 'mobilenet', 'resnet50', 'vgg16', 'vgg19',
-              'capsnet']
+MODEL_LIST = ['capsnet', 'inceptionv3', 'mobilenet', 'resnet50',
+              'vgg16', 'vgg19']
 MODEL_DICT = {name.lower(): 'output/{}/checkpoints/{}_best.h5'\
               .format(name, name) for name in MODEL_LIST}
 LABEL_MAPS = 'data/data_valid/labelmap.json'
@@ -97,7 +99,9 @@ def load_data():
 def load_models():
     models = {}
     for name, path in MODEL_DICT.items():
-        if name.lower() == 'mobilenet':
+        if name.lower() == 'capsnet':
+            models[name] = build_model()[1].load_weights(path)
+        elif name.lower() == 'mobilenet':
             models[name] = load_model(path, custom_objects={'relu6': mobilenet.relu6})
         else:
             models[name] = load_model(path)
@@ -417,13 +421,13 @@ def test_models(x, y, models):
             print('\r[INFO] Progress... {:3.0f}%'\
                   .format(counts*100/samples), end='')
         print('\n[INFO] Testing images on {}... '.format(name), end='')
-        x = numpy.asarray(images, dtype='float32') / 255.0
-        y = numpy.asarray(y, dtype='int')
+        x_test = numpy.asarray(images, dtype='float32') / 255.0
+        y_test = numpy.asarray(y, dtype='int')
         if name == 'capsnet':
-            p = models[name].predict(x)[0].argmax(axis=1)
+            p_test = models[name].predict(x_test)[0].argmax(axis=1)
         else:
-            p = models[name].predict(x).argmax(axis=1)
-        accuracy = sum(p==y)*100/samples
+            p_test = models[name].predict(x_test).argmax(axis=1)
+        accuracy = sum(p_test==y_test)*100/samples
         histories['y_'+name].append(accuracy)
         print('done [accuracy: {:6.2f}%]'.format(accuracy))
     

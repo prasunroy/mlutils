@@ -89,7 +89,7 @@ class CapsuleLayer(layers.Layer):
                             self.input_num_capsule])
         assert self.routings > 0
         for i in range(self.routings):
-            c = tf.nn.softmax(b, dim=1)
+            c = tf.nn.softmax(b, axis=1)
             outputs = squash(K.batch_dot(c, inputs_hat, [2, 2]))
             if i < self.routings - 1:
                 b += K.batch_dot(outputs, inputs_hat, [2, 3])
