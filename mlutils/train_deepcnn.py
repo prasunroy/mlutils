@@ -31,6 +31,8 @@ from keras.utils import to_categorical
 from matplotlib import pyplot
 from scipy.io import loadmat
 
+from callbacks import Telegram
+
 
 # configurations
 # -----------------------------------------------------------------------------
@@ -53,6 +55,9 @@ IMAGE_SIZE = (100, 100, 3)
 BATCH_SIZE = 100
 NUM_EPOCHS = 100
 OUTPUT_DIR = 'output/{}/'.format(ARCHITECTURE)
+
+AUTH_TOKEN = ''
+TELCHAT_ID = 0
 # -----------------------------------------------------------------------------
 
 
@@ -166,8 +171,9 @@ def callbacks():
     cb_cpt_best = ModelCheckpoint(filepath=cpt_best, monitor='val_acc', save_best_only=True, verbose=1)
     cb_cpt_last = ModelCheckpoint(filepath=cpt_last, monitor='val_acc', save_best_only=False, verbose=0)
     cb_tbd = TensorBoard(log_dir=tbd_dir, batch_size=BATCH_SIZE, write_grads=True, write_images=True)
+    cb_tel = Telegram(auth_token=AUTH_TOKEN, chat_id=TELCHAT_ID, monitor='val_acc', out_dir=OUTPUT_DIR)
     
-    return [cb_log, cb_stp, cb_cpt_best, cb_cpt_last, cb_tbd]
+    return [cb_log, cb_stp, cb_cpt_best, cb_cpt_last, cb_tbd, cb_tel]
 
 
 # train model
