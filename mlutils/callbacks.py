@@ -141,9 +141,15 @@ class Telegram(callbacks.Callback):
         return
     
     def _send_message(self, data):
-        requests.post(self._address+'/sendMessage', data=data)
+        try:
+            requests.post(self._address+'/sendMessage', data=data)
+        except:
+            pass
         return
     
     def _send_photo(self, data, files):
-        requests.post(self._address+'/sendPhoto', data=data, files=files)
+        try:
+            requests.post(self._address+'/sendPhoto', data=data, files=files)
+        except:
+            pass
         return
