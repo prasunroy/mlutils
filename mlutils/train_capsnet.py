@@ -38,6 +38,8 @@ from CapsuleNetwork import Length
 from CapsuleNetwork import Mask
 from CapsuleNetwork import PrimaryCaps
 
+from callbacks import Telegram
+
 
 # configurations
 # -----------------------------------------------------------------------------
@@ -57,6 +59,9 @@ RECON_COEF = 0.0005
 N_ROUTINGS = 3
 F_OPTIMIZE = optimizers.adam(lr=LEARN_RATE)
 OUTPUT_DIR = 'output/{}/'.format(ARCHITECTURE)
+
+AUTH_TOKEN = ''
+TELCHAT_ID = 0
 # -----------------------------------------------------------------------------
 
 
@@ -191,8 +196,9 @@ def callbacks():
     cb_cpt_best = ModelCheckpoint(filepath=cpt_best, monitor='val_{}_acc'.format(ARCHITECTURE), save_best_only=True, save_weights_only=True, verbose=1)
     cb_cpt_last = ModelCheckpoint(filepath=cpt_last, monitor='val_{}_acc'.format(ARCHITECTURE), save_best_only=False, save_weights_only=True, verbose=0)
     cb_tbd = TensorBoard(log_dir=tbd_dir, batch_size=BATCH_SIZE, write_grads=True, write_images=True)
+    cb_tel = Telegram(auth_token=AUTH_TOKEN, chat_id=TELCHAT_ID, monitor='val_{}_acc'.format(ARCHITECTURE), out_dir=OUTPUT_DIR)
     
-    return [cb_log, cb_stp, cb_lrs, cb_cpt_best, cb_cpt_last, cb_tbd]
+    return [cb_log, cb_stp, cb_lrs, cb_cpt_best, cb_cpt_last, cb_tbd, cb_tel]
 
 
 # train model
@@ -223,8 +229,7 @@ def train():
                               batch_size=BATCH_SIZE,
                               epochs=NUM_EPOCHS,
                               callbacks=cb_list,
-                              validation_data=[[x_valid, y_valid],
-                                               [y_valid, x_valid]])
+                              validation_data=[[x_valid, y_valid], [y_valid, x_valid]])
     
     # plot learning curve
     plot(train_history)
