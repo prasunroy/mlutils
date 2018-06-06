@@ -448,7 +448,7 @@ def plot(filepath, title='', xlabel='', ylabel='',
     for name in histories.keys():
         if name == 'x':
             continue
-        pyplot.plot(histories['x'], histories[name], label=name)
+        pyplot.plot(histories['x'], histories[name], label=name.split('_')[-1])
     pyplot.legend()
     pyplot.savefig(filepath)
     pyplot.show()
