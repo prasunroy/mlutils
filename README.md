@@ -5,6 +5,18 @@
 ![badge](https://github.com/prasunroy/mlutils/blob/master/assets/badge_1.svg)
 ![badge](https://github.com/prasunroy/mlutils/blob/master/assets/badge_2.svg)
 
+## Installation
+#### Method 1: Install using native pip
+```
+pip install git+https://github.com/prasunroy/mlutils.git
+```
+#### Method 2: Install manually
+```
+git clone https://github.com/prasunroy/mlutils.git
+cd mlutils
+python setup.py install
+```
+
 ## References
 >[Logo](https://github.com/prasunroy/mlutils/raw/master/assets/logo.png) is obtained from [Pixabay](https://pixabay.com) made available under [Creative Commons CC0 License](https://creativecommons.org/publicdomain/zero/1.0/deed.en).
 
