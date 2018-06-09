@@ -17,6 +17,73 @@ cd mlutils
 python setup.py install
 ```
 
+## Image Data Building Functions
+### Download images from [ImageNet](http://www.image-net.org)
+#### Description
+```
+fetch_imagenet(dst, wnids=[], limit=0, verbose=True)
+    Downloads images from ImageNet (http://www.image-net.org).
+
+    Args:
+        dst     : Destination directory for images.
+        wnids   : A list of wnid strings of ImageNet synsets to download.
+                  Defaults to an empty list.
+        limit   : Maximum number of images to download from each specified
+                  synset. Downloads all images if limit <= 0. Defaults to 0.
+        verbose : Flag for verbose mode. Defaults to True.
+
+    Returns:
+        None.
+```
+#### Example
+```python
+from mlutils.datasets import fetch_imagenet
+
+# download 100 images from synset butterfly (wnid=n02274259)
+fetch_imagenet(dst='imagenet', wnids=['n02274259'], limit=100, verbose=True)
+```
+
+<img src='https://github.com/prasunroy/mlutils/raw/master/assets/image.png' />
+
+### Build labeled dataset from structurally organized images
+#### Description
+```
+build_data(src, dst, flag=1, size=(128, 128), length=10000, verbose=True)
+    Builds labeled dataset from structurally organized images.
+
+    Args:
+        src     : Source directory of labeled images. It should contain all the
+                  labels as sub-directories where name of each sub-directory is
+                  one class label and all images inside that sub-directory are
+                  instances of that class.
+        dst     : Destination directory for labelmap and data files.
+        flag    : Read flag. Defaults to 1.
+                  >0 -- read as color image (ignores alpha channel)
+                  =0 -- read as grayscale image
+                  <0 -- read as original image (keeps alpha channel)
+        size    : Target size of images. Defaults to (128, 128).
+        length  : Maximum number of images to be written in one data file.
+                  Defaults to 10000.
+        verbose : Flag for verbose mode. Defaults to True.
+
+    Returns:
+        None.
+
+    Yields:
+        A labelmap.json file containing mapping of labels into numeric class
+        ids and one or more .mat files containing labeled data. Each row of the
+        data is one labeled sample where the first column is a numeric class id
+        and the remaining columns are one dimensional representation of the
+        image pixels.
+```
+#### Example
+```python
+from mlutils.datasets import build_data
+
+# build 64x64 grayscale image data
+build_data(src='imagenet', dst='data', flag=0, size=(64, 64), length=10000, verbose=True)
+```
+
 ## References
 >[Logo](https://github.com/prasunroy/mlutils/raw/master/assets/logo.png) is obtained from [Pixabay](https://pixabay.com) made available under [Creative Commons CC0 License](https://creativecommons.org/publicdomain/zero/1.0/deed.en).
 
