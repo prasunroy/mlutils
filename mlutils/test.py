@@ -98,11 +98,14 @@ def load_data():
 # load models
 def load_models():
     models = {}
+    
     for name, path in MODEL_DICT.items():
         if name.lower() == 'capsnet':
-            models[name] = build_model()[1].load_weights(path)
+            models[name] = build_model()[1]
+            models[name].load_weights(path)
         elif name.lower() == 'mobilenet':
-            models[name] = load_model(path, custom_objects={'relu6': mobilenet.relu6})
+            models[name] = load_model(path,
+                                      custom_objects={'relu6': mobilenet.relu6})
         else:
             models[name] = load_model(path)
     
