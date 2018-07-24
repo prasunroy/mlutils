@@ -20,7 +20,8 @@ from random import randint
 # Telegram class
 class Telegram(callbacks.Callback):
     
-    def __init__(self, auth_token, chat_id, monitor='val_acc', out_dir='.', task_id=None):
+    def __init__(self, auth_token, chat_id, monitor='val_acc', out_dir='.',
+                 task_id=None):
         self._task_id = task_id or randint(1000, 9999)
         self._chat_id = chat_id
         self._address = 'https://api.telegram.org/bot{}'.format(auth_token)
@@ -103,7 +104,7 @@ class Telegram(callbacks.Callback):
         plot_a = os.path.join(self._out_dir, 'plot_acc.png')
         
         # plot training and validation loss
-        pyplot.figure()
+        pyplot.figure('fig_1')
         pyplot.title('Training and Validation Loss')
         pyplot.xlabel('epoch')
         pyplot.ylabel('loss')
@@ -113,9 +114,10 @@ class Telegram(callbacks.Callback):
             pyplot.plot(self._history[metric], label=metric)
         pyplot.legend()
         pyplot.savefig(plot_l)
+        pyplot.close('fig_1')
         
         # plot training and validation accuracy
-        pyplot.figure()
+        pyplot.figure('fig_2')
         pyplot.title('Training and Validation Accuracy')
         pyplot.xlabel('epoch')
         pyplot.ylabel('accuracy')
@@ -125,6 +127,7 @@ class Telegram(callbacks.Callback):
             pyplot.plot(self._history[metric], label=metric)
         pyplot.legend()
         pyplot.savefig(plot_a)
+        pyplot.close('fig_2')
         
         # broadcast results
         data = {}
