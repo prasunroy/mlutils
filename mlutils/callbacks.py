@@ -20,8 +20,8 @@ from random import randint
 # Telegram class
 class Telegram(callbacks.Callback):
     
-    def __init__(self, auth_token, chat_id, monitor='val_acc', out_dir='.'):
-        self._task_id = None
+    def __init__(self, auth_token, chat_id, monitor='val_acc', out_dir='.', task_id=None):
+        self._task_id = task_id or randint(1000, 9999)
         self._chat_id = chat_id
         self._address = 'https://api.telegram.org/bot{}'.format(auth_token)
         self._history = {}
@@ -30,7 +30,6 @@ class Telegram(callbacks.Callback):
         return
     
     def on_train_begin(self, logs):
-        self._task_id = randint(1000, 9999)
         for metric in self.params.get('metrics'):
             self._history[metric] = []
         data = {}
