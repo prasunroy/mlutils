@@ -39,15 +39,15 @@ class LayersVisualizer:
         for index, layer in enumerate(self._model.layers):
             if any([ex_key in layer.name for ex_key in self._exclusions]):
                 continue
-            fn_key = 'layer_{}_{}'.format(str(index).zfill(len(str(len(self._model.layers)))), layer.name)
+            id_str = str(index).zfill(len(str(len(self._model.layers))))
+            fn_key = 'layer_{}_{}'.format(id_str, layer.name)
             functions[fn_key] = K.function([self._model.input, K.learning_phase()], [layer.output])
         return functions
     
     # ~~~~~~~~ create grid from array ~~~~~~~~
     def _to_grid(self, array, padding=0):
-        if len(array.shape) == 1:
-            array = array.reshape(-1, 1, 1)
-        h, w, c = array.shape
+        array = numpy.atleast_3d(array)
+        h, w, c = array.shape[:3]
         grid_sq = int(numpy.ceil(numpy.sqrt(c)))
         for rows in range(1, int(numpy.sqrt(c)) + 1):
             if c % rows == 0:
@@ -71,25 +71,43 @@ class LayersVisualizer:
                 break
         return grid
     
+    # ~~~~~~~~ write image ~~~~~~~~
+    def _write_image(self, filepath, image, overwrite=False):
+        if not overwrite and os.path.isfile(filepath):
+            print('[INFO] Skipped overwriting existing image at {}'.format(filepath))
+        elif imwrite(filepath, image):
+            print('[INFO] Saved output image at {}'.format(filepath))
+        else:
+            print('[INFO] Failed to save output image at {}'.format(filepath))
+        return
+    
     # ~~~~~~~~ parse input ~~~~~~~~
     def parse_input(self, x, mode=0):
         self._fn_outputs = {fn_key: fn([x, mode])[0][0] for fn_key, fn in self._bfunctions.items()}
         return self._fn_outputs
     
     # ~~~~~~~~ save outputs ~~~~~~~~
-    def save(self, out_dir, padding=0, layer_keys=[], overwrite=False):
+    def save(self, out_dir, as_grid=True, padding=0, layer_keys=[], overwrite=False):
         if not os.path.isdir(out_dir):
             os.makedirs(out_dir)
         for fn_key, output in self._fn_outputs.items():
             if len(layer_keys) > 0 and not any([layer_key in fn_key for layer_key in layer_keys]):
                 continue
-            filepath = os.path.join(out_dir, '{}.png'.format(fn_key))
-            if not overwrite and os.path.isfile(filepath):
-                print('[INFO] Skipped overwriting existing image at {}'.format(filepath))
-            elif imwrite(filepath, self._to_grid(output, padding)):
-                print('[INFO] Saved output image at {}'.format(filepath))
+            if as_grid:
+                filepath = os.path.join(out_dir, '{}.png'.format(fn_key))
+                self._write_image(filepath, self._to_grid(output, padding), overwrite)
             else:
-                print('[INFO] Failed to save output image at {}'.format(filepath))
+                path = os.path.join(out_dir, fn_key)
+                if not os.path.isdir(path):
+                    os.makedirs(path)
+                output = numpy.atleast_3d(output)
+                n_filt = output.shape[2]
+                for k in range(n_filt):
+                    indexstr = str(k).zfill(len(str(n_filt)))
+                    filepath = os.path.join(path, 'filter_{}.png'.format(indexstr))
+                    image = cv2.normalize(output[:, :, k], None, 0, 255,
+                                          cv2.NORM_MINMAX, cv2.CV_8UC1)
+                    self._write_image(filepath, image, overwrite)
         return
     
     # ~~~~~~~~ show outputs ~~~~~~~~
