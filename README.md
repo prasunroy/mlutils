@@ -86,35 +86,23 @@ build_data(src='imagenet', dst='data', flag=0, size=(64, 64), length=10000, verb
 
 ## Custom Callbacks for Keras
 ### Telegram
-#### Description
-```
+**Sends training statistics as chat messages on Telegram using Telegram API.**
+```python
 Telegram(auth_token, chat_id, monitor='val_acc', out_dir='.', task_id=None)
-    Sends training statistics as chat messages on Telegram using Telegram API.
-    
-    Args:
-        auth_token : Unique authentication token to access Telegram API. It is
-                     obtained during the creation of a Telegram Bot account
-                     e.g. '123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11'.
-        chat_id    : Unique identifier for the target chat or username of the
-                     target channel (in the format @channelusername).
-        monitor    : Metric to be monitored during training a model.
-                     Defaults to 'val_acc' (validation accuracy).
-        out_dir    : Output directory for plots. It will be created if does not
-                     exist. Defaults to '.' (current directory).
-        task_id    : Unique task identifier. If not provided a random 4-digit
-                     numeric identifier will be allocated (may not be unique).
-                     Defaults to None.
-    
-    Returns:
-        A Keras Callback instance.
 ```
+| Argument | Type | Default | Description |
+| :------- | :--: | :-----: | :---------- |
+| **auth_token** | `string`                      | | Unique authentication token to access [Telegram API](https://core.telegram.org/api). It is obtained during the creation of a [Telegram Bot](https://core.telegram.org/bots) account.   |
+| **chat_id**    | `integer` <br>or<br> `string` | | Unique identifier for the target chat or username of the target channel.      |
+| **monitor**    | `string`                      | `"val_acc"` | Metric to be monitored during training a model.                   |
+| **out_dir**    | `string`                      | `"."`       | Output directory for plots. It will be created if does not exist. |
+| **task_id**    | `integer` <br>or<br> `string` | `None`      | Unique task identifier. If not provided a random 4-digit numeric identifier will be assigned (may not be unique). |
 #### Example
 ```python
 from mlutils.callbacks import Telegram
 
 # create a Telegram callback instance to monitor validation loss
-telegram = Telegram(auth_token='123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11',
-                    chat_id='@channelusername',
+telegram = Telegram(auth_token='123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11', chat_id='@channelusername',
                     monitor='val_loss', out_dir='output/', task_id=0)
 
 # invoke the callback during training a model
