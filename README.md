@@ -86,7 +86,7 @@ build_data(src='imagenet', dst='data', flag=0, size=(64, 64), length=10000, verb
 
 ## Custom Callbacks for Keras
 ### Telegram
-**Sends training statistics as chat messages on [Telegram](https://telegram.org) using Telegram API.**
+**Sends training statistics as chat messages on [Telegram](https://telegram.org) using [Telegram API](https://core.telegram.org/api).**
 ```python
 Telegram(auth_token, chat_id, monitor='val_acc', out_dir='.', task_id=None)
 ```
